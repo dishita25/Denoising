@@ -1,7 +1,6 @@
 import argparse
-from src.trainer import train_model
+from src.trainer import train_model, test_model
 from PIL import Image
-from trainer import test_model
 
 def main():
     parser = argparse.ArgumentParser(description="Train ZSN2N model with hyperparameters")
