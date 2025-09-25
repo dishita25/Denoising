@@ -1,6 +1,7 @@
 import argparse
 from src.trainer import train_model
 from PIL import Image
+from trainer import test_model
 
 def main():
     parser = argparse.ArgumentParser(description="Train ZSN2N model with hyperparameters")
@@ -33,7 +34,9 @@ def main():
         device=args.device
     )
 
-  test_model(model)
+    results = test_model(model, args.dataset)
 
+    print("Test Results:", results)
+    
 if __name__ == "__main__":
     main()

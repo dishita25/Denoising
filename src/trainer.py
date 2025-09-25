@@ -3,6 +3,8 @@ import torch.optim as optim
 import numpy as np
 from src.loss import loss_func, mse
 from model.ZSN2N import network
+from dataloader.PolyU import evaluate_polyu
+from dataloader.CBSD68 import evaluate_artificial
 
 def train_model(
     clean_img,
@@ -48,9 +50,18 @@ def train_model(
     return model
 
 
-def test_model(model, dataset):
+def test_model(model, dataset_name, dataset_path=None, device="cuda"):
     model.eval()
 
-    if dataset== 'CBSD68'
-    return
+    if dataset_name == "polyu":
+        print("Evaluating on PolyU...")
+        results = evaluate_polyu(model, dataset_path, device)
 
+    elif dataset_name == "mcmaster" or dataset_name == "cbsd68":
+        print("Evaluating on Artificial dataset...")
+        results = evaluate_artificial(model, dataset_path, device)
+
+    else:
+        raise ValueError(f"Unknown dataset: {dataset_name}")
+
+    return results
