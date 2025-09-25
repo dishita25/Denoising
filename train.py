@@ -1,6 +1,11 @@
 import argparse
 from src.trainer import train_model, test_model
 from PIL import Image
+import torchvision.transforms as T
+from utils import add_noise
+
+# transforms
+to_tensor = T.ToTensor()
 
 def main():
     parser = argparse.ArgumentParser(description="Train ZSN2N model with hyperparameters")
@@ -15,13 +20,25 @@ def main():
     parser.add_argument("--noisy_img", type=str, default=None, help="Noisy Image")
     parser.add_argument("--clean_img", type=str, default=None, help="Clean Image")
     parser.add_argument("--dataset", type=str, default=None, help="Dataset Name")
+    parser.add_argument("--dataset_path", type=str, default=None, help="Dataset Path")
 
     args = parser.parse_args()
 
-    # make sure you are cropping here as well centre prop
-    
-    noisy_img = Image.open(args.noisy_img).convert("RGB")
+    # make sure you are cropping here as well centre prop       
     clean_img = Image.open(args.clean_img).convert("RGB")
+    
+    # noisy_img
+    if args.dataset == "Mcmaster" or args.dataset == "CBSD" or args.dataset == "kodak":   
+        noisy_img = add_noise(clean_img, noise_level)
+    else:    
+        noisy_img = Image.open(args.noisy_img).convert("RGB")
+        
+    center_crop = T.CenterCrop((256, 256))
+    
+    clean_img = center_crop(clean_img)
+    clean_img = to_tensor(clean_img).unsqueeze(0)
+    noisy_img = center_crop(noisy_img)
+    noisy_img = to_tensor(noisy_img).unsqueeze(0)
 
     # --- Training ---
     model = train_model(
@@ -35,7 +52,7 @@ def main():
         device=args.device
     )
 
-    results = test_model(model, args.dataset)
+    results = test_model(model, args.dataset, args.dataset_path)
 
     print("Test Results:", results)
 

@@ -37,6 +37,17 @@ def denoise(model, noisy_img):
 
     return pred
 
+def add_noise(x,noise_level, noise_type = 'gauss'):
+
+    if noise_type == 'gauss':
+        noisy = x + torch.normal(0, noise_level/255, x.shape)
+        noisy = torch.clamp(noisy,0,1)
+
+    elif noise_type == 'poiss':
+        noisy = torch.poisson(noise_level * x)/noise_level
+
+    return noisy
+
 def test(model, noisy_img, clean_img):
 
     with torch.no_grad():
