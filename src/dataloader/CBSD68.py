@@ -7,7 +7,9 @@ from utils import test
 # transforms
 to_tensor = T.ToTensor()
 
-def evaluate_artificial(model, dataset_path, device="cuda"):
+## change to actual cbsd68 
+
+def evaluate_artificial(model, dataset_path,device="cuda"):
     """
     Evaluate model on dataset with real and mean images.
     Args:

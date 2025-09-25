@@ -18,6 +18,8 @@ def main():
 
     args = parser.parse_args()
 
+    # make sure you are cropping here as well centre prop
+    
     noisy_img = Image.open(args.noisy_img).convert("RGB")
     clean_img = Image.open(args.clean_img).convert("RGB")
 
