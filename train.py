@@ -1,18 +1,39 @@
-def train(model, optimizer, noisy_img):
+import argparse
+from src.trainer import train_model
+from PIL import Image
 
-  loss = loss_func(noisy_img, model)
+def main():
+    parser = argparse.ArgumentParser(description="Train ZSN2N model with hyperparameters")
 
-  optimizer.zero_grad()
-  loss.backward()
-  optimizer.step()
+    # Hyperparameters
+    parser.add_argument("--max_epoch", type=int, default=5000, help="Training epochs")
+    parser.add_argument("--lr", type=float, default=0.001, help="Learning rate")
+    parser.add_argument("--step_size", type=int, default=1000, help="LR step size")
+    parser.add_argument("--gamma", type=float, default=0.5, help="LR decay factor")
+    parser.add_argument("--device", type=str, default="cuda", help="Device to use")
+    parser.add_argument("--n_chan", type=int, default=None, help="Number of channels (auto if None)")
+    parser.add_argument("--noisy_img", type=str, default=None, help="Noisy Image")
+    parser.add_argument("--clean_img", type=str, default=None, help="Clean Image")
+    parser.add_argument("--dataset", type=str, default=None, help="Dataset Name")
 
-  return loss.item()
+    args = parser.parse_args()
 
-def test(model, noisy_img, clean_img):
+    noisy_img = Image.open(args.noisy_img).convert("RGB")
+    clean_img = Image.open(args.clean_img).convert("RGB")
 
-    with torch.no_grad():
-        pred = torch.clamp(noisy_img - model(noisy_img),0,1)
-        MSE = mse(clean_img, pred).item()
-        PSNR = 10*np.log10(1/MSE)
+    # --- Training ---
+    model = train_model(
+        clean_img=clean_img,
+        noisy_img=noisy_img,
+        n_chan=args.n_chan,
+        max_epoch=args.max_epoch,
+        lr=args.lr,
+        step_size=args.step_size,
+        gamma=args.gamma,
+        device=args.device
+    )
 
-    return PSNR
+  test_model(model)
+
+if __name__ == "__main__":
+    main()

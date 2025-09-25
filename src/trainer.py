@@ -1,39 +1,56 @@
-import torch 
-import torch.nn.functional as F
-import numpy as np
-from src.loss import loss_func
-from model.ZSN2N import network
-from src.loss import mse
+import torch
 import torch.optim as optim
+import numpy as np
+from src.loss import loss_func, mse
+from model.ZSN2N import network
 
-max_epoch = 5000     # training epochs
-lr = 0.001           # learning rate
-step_size = 1000     # number of epochs at which learning rate decays
-gamma = 0.5          # factor by which learning rate decays
-device = 'cuda'
+def train_model(
+    clean_img,
+    noisy_img,
+    n_chan=None,
+    max_epoch=5000,
+    lr=0.001,
+    step_size=1000,
+    gamma=0.5,
+    device="cuda"
+):
 
-n_chan = clean_img.shape[1]
-model = network(n_chan)
-model = model.to(device)
-print("The number of parameters of the network is: ",  sum(p.numel() for p in model.parameters() if p.requires_grad))
-optimizer = optim.Adam(model.parameters(), lr=lr)
-scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=step_size, gamma=gamma)
+    if n_chan is None:
+        n_chan = clean_img.shape[1]
 
-def train(model, optimizer, noisy_img):
+    model = network(n_chan).to(device)
+    print("The number of parameters of the network is:",
+          sum(p.numel() for p in model.parameters() if p.requires_grad))
 
-  loss = loss_func(noisy_img, model)
+    optimizer = optim.Adam(model.parameters(), lr=lr)
+    scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=step_size, gamma=gamma)
 
-  optimizer.zero_grad()
-  loss.backward()
-  optimizer.step()
+    clean_img = clean_img.to(device)
+    noisy_img = noisy_img.to(device)
 
-  return loss.item()
+    for epoch in range(1, max_epoch + 1):
+        # --- Train step ---
+        loss = loss_func(noisy_img, model)
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+        scheduler.step()
 
-def test(model, noisy_img, clean_img):
+        # --- Test step --- 
+        with torch.no_grad():
+            pred = torch.clamp(noisy_img - model(noisy_img), 0, 1)
+            MSE = mse(clean_img, pred).item()
+            PSNR = 10 * np.log10(1 / MSE)
 
-    with torch.no_grad():
-        pred = torch.clamp(noisy_img - model(noisy_img),0,1)
-        MSE = mse(clean_img, pred).item()
-        PSNR = 10*np.log10(1/MSE)
+        if epoch % 100 == 0 or epoch == 1:
+            print(f"Epoch [{epoch}/{max_epoch}] | Loss: {loss.item():.6f} | PSNR: {PSNR:.2f} dB")
 
-    return PSNR
+    return model
+
+
+def test_model(model, dataset):
+    model.eval()
+
+    if dataset== 'CBSD68'
+    return
+
