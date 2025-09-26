@@ -10,15 +10,7 @@ to_tensor = T.ToTensor()
 ## change to actual cbsd68 
 
 def evaluate_artificial(model, dataset_name, noise_level, dataset_path, device="cuda"):
-    """
-    Evaluate model on dataset with real and mean images.
-    Args:
-        model: trained denoiser model
-        dataset_path: root folder (contains <dataset>_noisy_XX and original_png)
-        device: "cuda" or "cpu"
-    Returns:
-        avg_psnr: float
-    """
+
     model.eval()
     noise_folder = f"{dataset_name}_noisy_{noise_level}"
     noisy_path = os.path.join(dataset_path, noise_folder)

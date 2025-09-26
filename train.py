@@ -21,6 +21,7 @@ def main():
     parser.add_argument("--clean_img", type=str, default=None, help="Clean Image")
     parser.add_argument("--dataset", type=str, default=None, help="Dataset Name")
     parser.add_argument("--dataset_path", type=str, default=None, help="Dataset Path")
+    parser.add_argument("--noise_level", type=str, default=None, help="Noise Level")
 
     args = parser.parse_args()
 
@@ -29,7 +30,7 @@ def main():
     
     # noisy_img
     if args.dataset == "Mcmaster" or args.dataset == "CBSD" or args.dataset == "kodak":   
-        noisy_img = add_noise(clean_img, noise_level)
+        noisy_img = add_noise(clean_img, args.noise_level)
     else:    
         noisy_img = Image.open(args.noisy_img).convert("RGB")
         

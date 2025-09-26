@@ -8,15 +8,7 @@ from utils import test
 to_tensor = T.ToTensor()
 
 def evaluate_polyu(model, dataset_path, device="cuda"):
-    """
-    Evaluate model on dataset with real and mean images.
-    Args:
-        model: trained denoiser model
-        dataset_path: root folder containing *_real.JPG and *_mean.JPG
-        device: "cuda" or "cpu"
-    Returns:
-        avg_psnr: float
-    """
+
     model.eval()
 
     psnrs = []
