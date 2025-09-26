@@ -11,15 +11,15 @@ to_tensor = T.ToTensor()
 
 
 def run_training(args, trial=None):
-    # --- Hyperparameters (Optuna overrides if trial is provided) ---
+    # --- Hyperparameters ---
     max_epoch = trial.suggest_int("max_epoch", 3000, 6000, step=500) if trial else args.max_epoch
-    lr = trial.suggest_float("lr", 0.001, 0.1) if trial else args.lr
+    lr = trial.suggest_float("lr", 1e-4, 1e-2, log=True) if trial else args.lr
     step_size = trial.suggest_int("step_size", 500, 2000, step=500) if trial else args.step_size
     mask_ratio = trial.suggest_float("mask_ratio", 0.5, 0.7) if trial else args.mask_ratio
-    n_chan = args.n_chan   
-    gamma = 0.6           
+    gamma = trial.suggest_float("gamma", 0.3, 0.9) if trial else args.gamma
 
-
+    n_chan = args.n_chan   # keep from args
+      
     # --- Load and preprocess images ---
     clean_img = Image.open(args.clean_img).convert("RGB")
     if args.dataset in ["Mcmaster", "CBSD", "kodak"]:
@@ -56,6 +56,7 @@ def run_training(args, trial=None):
 
 def objective(trial, args):
     avg_psnr = run_training(args, trial)
+    print("Trial params:", trial.params) 
     return avg_psnr
 
 
