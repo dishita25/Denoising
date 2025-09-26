@@ -7,6 +7,48 @@ from utils import add_noise
 # transforms
 to_tensor = T.ToTensor()
 
+def run_training(args, trial=None):
+    # --- Hyperparameters (Optuna overrides if trial is provided) ---
+    max_epoch = trial.suggest_int("max_epoch", 3000, 6000, step=500) if trial else args.max_epoch
+    lr = trial.suggest_uniform("lr", 0.001, 0.1) if trial else args.lr
+    step_size = trial.suggest_int("step_size", 500, 2000, step=500) if trial else args.step_size
+    mask_ratio = trial.suggest_uniform("mask_ratio", 0.5, 0.7) if trial else args.mask_ratio
+    n_chan = args.n_chan   
+    gamma = 0.6           
+
+    # --- Load and preprocess images ---
+    clean_img = Image.open(args.clean_img).convert("RGB")
+    if args.dataset in ["Mcmaster", "CBSD", "kodak"]:
+        noisy_img = add_noise(clean_img, args.noise_level)
+    else:
+        noisy_img = Image.open(args.noisy_img).convert("RGB")
+
+    center_crop = T.CenterCrop((256, 256))
+    clean_img = to_tensor(center_crop(clean_img)).unsqueeze(0)
+    noisy_img = to_tensor(center_crop(noisy_img)).unsqueeze(0)
+
+    # --- Training ---
+    model = train_model(
+        clean_img=clean_img,
+        noisy_img=noisy_img,
+        n_chan=n_chan,
+        max_epoch=max_epoch,
+        lr=lr,
+        step_size=step_size,
+        gamma=gamma,
+        mask_ratio=mask_ratio,
+        device=args.device
+    )
+
+    # --- Testing ---
+    results = test_model(model, args.dataset, args.dataset_path, device=args.device, noise_level=args.noise_level)
+    return results
+
+
+def objective(trial, args):
+    avg_psnr = run_training(args, trial)
+    return avg_psnr
+
 def main():
     parser = argparse.ArgumentParser(description="Train ZSN2N model with hyperparameters")
 
@@ -22,40 +64,24 @@ def main():
     parser.add_argument("--dataset", type=str, default=None, help="Dataset Name")
     parser.add_argument("--dataset_path", type=str, default=None, help="Dataset Path")
     parser.add_argument("--noise_level", type=str, default=None, help="Noise Level")
+    parser.add_argument("--optuna", action="store_true", help="Run hyperparameter optimization")
+
 
     args = parser.parse_args()
 
-    # make sure you are cropping here as well centre prop       
-    clean_img = Image.open(args.clean_img).convert("RGB")
-    
-    # noisy_img
-    if args.dataset == "Mcmaster" or args.dataset == "CBSD" or args.dataset == "kodak":   
-        noisy_img = add_noise(clean_img, args.noise_level) ## directly pass the noisy image here, you do not need to add noise...
-    else:    
-        noisy_img = Image.open(args.noisy_img).convert("RGB")
-        
-    center_crop = T.CenterCrop((256, 256))
-    
-    clean_img = center_crop(clean_img)
-    clean_img = to_tensor(clean_img).unsqueeze(0)
-    noisy_img = center_crop(noisy_img)
-    noisy_img = to_tensor(noisy_img).unsqueeze(0)
+    if args.optuna:
+        study = optuna.create_study(direction="maximize")
+        study.optimize(lambda trial: objective(trial, args), n_trials=20)
 
-    # --- Training ---
-    model = train_model(
-        clean_img=clean_img,
-        noisy_img=noisy_img,
-        n_chan=args.n_chan,
-        max_epoch=args.max_epoch,
-        lr=args.lr,
-        step_size=args.step_size,
-        gamma=args.gamma,
-        device=args.device
-    )
+        print("Best trial:")
+        print(f"  Value (PSNR): {study.best_trial.value:.2f}")
+        print("  Params: ")
+        for key, value in study.best_trial.params.items():
+            print(f"    {key}: {value}")
+    else:
+        results = run_training(args)
+        print("Test Results:", results)
 
-    results = test_model(model, args.dataset, args.dataset_path)
-
-    print("Test Results:", results)
 
 if __name__ == "__main__":
     main()

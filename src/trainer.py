@@ -10,11 +10,12 @@ from utils import test
 def train_model(
     clean_img,
     noisy_img,
-    n_chan=None,
-    max_epoch=5000,
-    lr=0.001,
-    step_size=1000,
-    gamma=0.5,
+    n_chan,
+    max_epoch,
+    lr,
+    step_size,
+    gamma,
+    mask_ratio,
     device="cuda"
 ):
 
