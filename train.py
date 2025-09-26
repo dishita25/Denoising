@@ -2,7 +2,7 @@ import argparse
 from src.trainer import train_model, test_model
 from PIL import Image
 import torchvision.transforms as T
-from utils import add_noise
+from src.utils import add_noise
 import optuna
 
 # transforms
@@ -60,10 +60,10 @@ def main():
     parser.add_argument("--gamma", type=float, default=0.5, help="LR decay factor")
     parser.add_argument("--device", type=str, default="cuda", help="Device to use")
     parser.add_argument("--n_chan", type=int, default=48, help="Number of channels (auto if None)")
-    parser.add_argument("--noisy_img", type=str, default=None, help="Noisy Image")
-    parser.add_argument("--clean_img", type=str, default=None, help="Clean Image")
-    parser.add_argument("--dataset", type=str, default=None, help="Dataset Name")
-    parser.add_argument("--dataset_path", type=str, default=None, help="Dataset Path")
+    parser.add_argument("--noisy_img", type=str, default=None, help="/kaggle/input/original/Canon5D2_bag_Real.JPG")
+    parser.add_argument("--clean_img", type=str, default=None, help="/kaggle/input/original/Canon5D2_bag_mean.JPG")
+    parser.add_argument("--dataset", type=str, default=None, help="Poly U")
+    parser.add_argument("--dataset_path", type=str, default=None, help="/kaggle/input/original")
     parser.add_argument("--noise_level", type=str, default=None, help="Noise Level")
     parser.add_argument("--optuna", action="store_true", help="Run hyperparameter optimization")
 
