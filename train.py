@@ -82,11 +82,11 @@ def main():
 
     if args.optuna:
         print("Using Optuna for hyperparameter optimization...")
-        study = optuna.create_study(direction="maximize")
+        study = optuna.create_study(directions=["maximize", "maximize"])
         study.optimize(lambda trial: objective(trial, args), n_trials=20)
 
         print("Best trial:")
-        print(f"  Value (PSNR): {study.best_trial.value:.2f}")
+        print(f"  Values (PSNR, SSIM): {study.best_trial.values}")
         print("  Params: ")
         for key, value in study.best_trial.params.items():
             print(f"    {key}: {value}")
