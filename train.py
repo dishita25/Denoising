@@ -59,7 +59,7 @@ def main():
     parser.add_argument("--step_size", type=int, default=1000, help="LR step size")
     parser.add_argument("--gamma", type=float, default=0.5, help="LR decay factor")
     parser.add_argument("--device", type=str, default="cuda", help="Device to use")
-    parser.add_argument("--n_chan", type=int, default=48, help="Number of channels (auto if None)")
+    parser.add_argument("--n_chan", type=int, default=3, help="Number of channels (auto if None)")
     parser.add_argument("--noisy_img", type=str, default="/kaggle/input/original/Canon5D2_bag_Real.JPG", help="Noisy image path")
     parser.add_argument("--clean_img", type=str, default="/kaggle/input/original/Canon5D2_bag_mean.JPG", help="Path to clean image")
     parser.add_argument("--dataset", type=str, default=None, help="polyu")
