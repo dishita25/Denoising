@@ -61,4 +61,4 @@ def test_model(model, dataset_name, dataset_path, device="cuda", noise_level = N
     else:
         raise ValueError(f"Unknown dataset: {dataset_name}")
 
-    return psrn, ssim
+    return psnr, ssim
