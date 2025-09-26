@@ -3,6 +3,7 @@ from src.trainer import train_model, test_model
 from PIL import Image
 import torchvision.transforms as T
 from utils import add_noise
+import optuna
 
 # transforms
 to_tensor = T.ToTensor()
