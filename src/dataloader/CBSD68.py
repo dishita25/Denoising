@@ -2,7 +2,7 @@ import os
 import torchvision.transforms as T
 from PIL import Image
 import numpy as np
-from utils import test
+from src.utils import test
 
 # transforms
 to_tensor = T.ToTensor()

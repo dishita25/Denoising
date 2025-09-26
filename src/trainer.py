@@ -2,10 +2,10 @@ import torch
 import torch.optim as optim
 import numpy as np
 from src.loss import loss_func, mse
-from model.ZSN2N import network
-from dataloader.PolyU import evaluate_polyu
-from dataloader.CBSD68 import evaluate_artificial
-from utils import test
+from src.model.ZSN2N import network
+from src.dataloader.PolyU import evaluate_polyu
+from src.dataloader.CBSD68 import evaluate_artificial
+from src.utils import test
 
 def train_model(
     clean_img,
@@ -49,7 +49,7 @@ def train_model(
     return model
 
 
-def test_model(model, dataset_name, dataset_path=None, device="cuda", noise_level = None):
+def test_model(model, dataset_name, dataset_path, device="cuda", noise_level = None):
     model.eval()
 
     if dataset_name == "polyu":
