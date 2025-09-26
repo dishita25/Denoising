@@ -1,6 +1,6 @@
 import torch.nn.functional as F
 import torch 
-from src.loss import mse 
+from loss import mse 
 import numpy as np
 
 def pair_downsampler(img):
