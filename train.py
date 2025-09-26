@@ -11,11 +11,11 @@ to_tensor = T.ToTensor()
 def run_training(args, trial=None):
     # --- Hyperparameters (Optuna overrides if trial is provided) ---
     max_epoch = trial.suggest_int("max_epoch", 3000, 6000, step=500) if trial else args.max_epoch
-    lr = trial.suggest_uniform("lr", 0.001, 0.1) if trial else args.lr
+    lr = trial.suggest_float("lr", 0.001, 0.1, log=True) if trial else args.lr  # Fixed: suggest_float with log=True
     step_size = trial.suggest_int("step_size", 500, 2000, step=500) if trial else args.step_size
-    mask_ratio = trial.suggest_uniform("mask_ratio", 0.5, 0.7) if trial else args.mask_ratio
+    mask_ratio = trial.suggest_float("mask_ratio", 0.5, 0.7) if trial else args.mask_ratio  # Fixed: suggest_float
     n_chan = args.n_chan   
-    gamma = 0.6           
+    gamma = trial.suggest_float("gamma", 0.5, 0.8) if trial else 0.6  # Added gamma optimization
 
     # --- Load and preprocess images ---
     clean_img = Image.open(args.clean_img).convert("RGB")
@@ -28,7 +28,7 @@ def run_training(args, trial=None):
     clean_img = to_tensor(center_crop(clean_img)).unsqueeze(0)
     noisy_img = to_tensor(center_crop(noisy_img)).unsqueeze(0)
 
-    # --- Training ---
+    # --- Training with Optuna integration ---
     model = train_model(
         clean_img=clean_img,
         noisy_img=noisy_img,
@@ -38,17 +38,29 @@ def run_training(args, trial=None):
         step_size=step_size,
         gamma=gamma,
         mask_ratio=mask_ratio,
-        device=args.device
+        device=args.device,
+        trial=trial  # Pass trial for intermediate reporting
     )
 
     # --- Testing ---
     results = test_model(model, args.dataset, args.dataset_path, device=args.device, noise_level=args.noise_level)
-    return results
-
+    
+    # Return single float value for Optuna
+    if isinstance(results, dict) and 'avg_psnr' in results:
+        return results['avg_psnr']
+    elif isinstance(results, (int, float)):
+        return float(results)
+    else:
+        return float(results)
 
 def objective(trial, args):
-    avg_psnr = run_training(args, trial)
-    return avg_psnr
+    try:
+        avg_psnr = run_training(args, trial)
+        return avg_psnr
+    except Exception as e:
+        print(f"Trial {trial.number} failed with error: {e}")
+        # Return a low value for failed trials
+        return 0.0
 
 def main():
     parser = argparse.ArgumentParser(description="Train ZSN2N model with hyperparameters")
@@ -59,31 +71,84 @@ def main():
     parser.add_argument("--step_size", type=int, default=1000, help="LR step size")
     parser.add_argument("--gamma", type=float, default=0.5, help="LR decay factor")
     parser.add_argument("--device", type=str, default="cuda", help="Device to use")
-    parser.add_argument("--n_chan", type=int, default=3, help="Number of channels (auto if None)")
+    parser.add_argument("--n_chan", type=int, default=3, help="Number of channels")
+    parser.add_argument("--mask_ratio", type=float, default=0.6, help="Mask ratio")
+    
+    # Data paths
     parser.add_argument("--noisy_img", type=str, default="/kaggle/input/original/Canon5D2_bag_Real.JPG", help="Noisy image path")
     parser.add_argument("--clean_img", type=str, default="/kaggle/input/original/Canon5D2_bag_mean.JPG", help="Path to clean image")
     parser.add_argument("--dataset", type=str, default="polyu", help="Dataset name")
-    parser.add_argument("--dataset_path", type=str, default="/kaggle/input/polyucropped", help="Dataset path for inference")
+    parser.add_argument("--dataset_path", type=str, default="/kaggle/input/polyucropped", help="Dataset path")
     parser.add_argument("--noise_level", type=str, default=None, help="Noise Level")
+    
+    # Optuna settings
     parser.add_argument("--optuna", action="store_true", help="Run hyperparameter optimization")
-    parser.add_argument("--mask_ratio", type=float, default=0.6, help="Mask ratio")
-
+    parser.add_argument("--n_trials", type=int, default=20, help="Number of Optuna trials")
 
     args = parser.parse_args()
 
     if args.optuna:
-        study = optuna.create_study(direction="maximize")
-        study.optimize(lambda trial: objective(trial, args), n_trials=20)
+        print(f"Starting Optuna optimization with {args.n_trials} trials...")
+        
+        # Enhanced Optuna configuration
+        study = optuna.create_study(
+            direction="maximize",
+            sampler=optuna.samplers.TPESampler(
+                seed=42,  # Reproducible results
+                n_startup_trials=5,  # Random trials before TPE
+                n_ei_candidates=24  # More candidates for exploration
+            ),
+            pruner=optuna.pruners.MedianPruner(
+                n_startup_trials=3,  # Start pruning after 3 trials
+                n_warmup_steps=500,  # Wait 500 epochs before pruning
+                interval_steps=100   # Check every 100 epochs
+            ),
+            study_name="ZSN2N_Optimization"
+        )
 
-        print("Best trial:")
-        print(f"  Value (PSNR): {study.best_trial.value:.2f}")
-        print("  Params: ")
+        # Add study optimization callback for better monitoring
+        def print_callback(study, trial):
+            print(f"Trial {trial.number} finished:")
+            print(f"  PSNR: {trial.value:.2f} dB")
+            print(f"  Params: {trial.params}")
+            print(f"  Best so far: {study.best_value:.2f} dB")
+            print("-" * 50)
+
+        study.optimize(
+            lambda trial: objective(trial, args), 
+            n_trials=args.n_trials,
+            callbacks=[print_callback],
+            show_progress_bar=True
+        )
+
+        print("=" * 60)
+        print("OPTUNA OPTIMIZATION COMPLETED")
+        print("=" * 60)
+        print(f"Best PSNR: {study.best_trial.value:.2f} dB")
+        print("Best hyperparameters:")
         for key, value in study.best_trial.params.items():
-            print(f"    {key}: {value}")
+            if isinstance(value, float):
+                print(f"  {key}: {value:.6f}")
+            else:
+                print(f"  {key}: {value}")
+        print("=" * 60)
+        
+        # Optionally run final training with best params
+        print("Running final training with best parameters...")
+        best_trial = study.best_trial
+        
+        # Update args with best parameters
+        args.max_epoch = best_trial.params['max_epoch']
+        args.lr = best_trial.params['lr']
+        args.step_size = best_trial.params['step_size']
+        args.mask_ratio = best_trial.params['mask_ratio']
+        
+        final_result = run_training(args)
+        print(f"Final validation PSNR: {final_result:.2f} dB")
+        
     else:
         results = run_training(args)
         print("Test Results:", results)
-
 
 if __name__ == "__main__":
     main()
