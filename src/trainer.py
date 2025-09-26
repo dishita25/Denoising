@@ -14,7 +14,8 @@ def train_model(
     step_size,
     gamma,
     mask_ratio,
-    device="cuda"
+    trial,
+    device="cuda",
 ):
 
     if n_chan is None:

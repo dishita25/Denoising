@@ -13,9 +13,9 @@ to_tensor = T.ToTensor()
 def run_training(args, trial=None):
     # --- Hyperparameters (Optuna overrides if trial is provided) ---
     max_epoch = trial.suggest_int("max_epoch", 3000, 6000, step=500) if trial else args.max_epoch
-    lr = trial.suggest_uniform("lr", 0.001, 0.1) if trial else args.lr
+    lr = trial.suggest_float("lr", 0.001, 0.1) if trial else args.lr
     step_size = trial.suggest_int("step_size", 500, 2000, step=500) if trial else args.step_size
-    mask_ratio = trial.suggest_uniform("mask_ratio", 0.5, 0.7) if trial else args.mask_ratio
+    mask_ratio = trial.suggest_float("mask_ratio", 0.5, 0.7) if trial else args.mask_ratio
     n_chan = args.n_chan   
     gamma = 0.6           
 
@@ -43,7 +43,8 @@ def run_training(args, trial=None):
         step_size=step_size,
         gamma=gamma,
         mask_ratio=mask_ratio,
-        device=args.device
+        trial = trial
+        device=args.device,
     )
 
 
