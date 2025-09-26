@@ -64,7 +64,7 @@ def main():
     parser.add_argument("--clean_img", type=str, default="/kaggle/input/original/Canon5D2_bag_mean.JPG", help="Path to clean image")
     parser.add_argument("--dataset", type=str, default="polyu", help="Dataset name")
     parser.add_argument("--dataset_path", type=str, default="/kaggle/input/polyucropped", help="Dataset path for inference")
-    parser.add_argument("--noise_level", type=str, default=None, help="Noise Level")
+    parser.add_argument("--noise_level", type=int, default=None, help="Noise Level")
     parser.add_argument("--optuna", action="store_true", help="Run hyperparameter optimization")
     parser.add_argument("--mask_ratio", type=float, default=0.6, help="Mask ratio")
 
