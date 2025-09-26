@@ -11,22 +11,20 @@ to_tensor = T.ToTensor()
 
 
 def run_training(args, trial=None):
-    # --- Hyperparameters ---
+    # --- Hyperparameters (Optuna overrides if trial is provided) ---
     max_epoch = trial.suggest_int("max_epoch", 3000, 6000, step=500) if trial else args.max_epoch
-    lr = trial.suggest_float("lr", 1e-4, 1e-2, log=True) if trial else args.lr
+    lr = trial.suggest_categorical("lr", [0.001, 0.01, 0.05, 0.1]) if trial else args.lr
     step_size = trial.suggest_int("step_size", 500, 2000, step=500) if trial else args.step_size
-    mask_ratio = trial.suggest_float("mask_ratio", 0.5, 0.7) if trial else args.mask_ratio
-    gamma = trial.suggest_float("gamma", 0.3, 0.9) if trial else args.gamma
+    mask_ratio = trial.suggest_categorical("mask_ratio", [0.5, 0.55, 0.6, 0.65, 0.7]) if trial else args.mask_ratio
+    gamma = trial.suggest_categorical("gamma", [0.5, 0.6, 0.7, 0.8, 0.9]) if trial else args.gamma
+    n_chan = args.n_chan   
 
-    n_chan = args.n_chan   # keep from args
-      
     # --- Load and preprocess images ---
     clean_img = Image.open(args.clean_img).convert("RGB")
     if args.dataset in ["Mcmaster", "CBSD", "kodak"]:
-        noisy_img = add_noise(clean_img, args.noise_level)
+        noisy_img = Image.open(args.noisy_img).convert("RGB")
     else:
         noisy_img = Image.open(args.noisy_img).convert("RGB")
-
 
     center_crop = T.CenterCrop((256, 256))
     clean_img = to_tensor(center_crop(clean_img)).unsqueeze(0)
@@ -43,8 +41,7 @@ def run_training(args, trial=None):
         step_size=step_size,
         gamma=gamma,
         mask_ratio=mask_ratio,
-        trial = trial,
-        device=args.device,
+        device=args.device
     )
 
 
@@ -56,7 +53,6 @@ def run_training(args, trial=None):
 
 def objective(trial, args):
     avg_psnr = run_training(args, trial)
-    print("Trial params:", trial.params) 
     return avg_psnr
 
 
@@ -75,7 +71,7 @@ def main():
     parser.add_argument("--clean_img", type=str, default="/kaggle/input/original/Canon5D2_bag_mean.JPG", help="Path to clean image")
     parser.add_argument("--dataset", type=str, default="polyu", help="Dataset name")
     parser.add_argument("--dataset_path", type=str, default="/kaggle/input/polyucropped", help="Dataset path for inference")
-    parser.add_argument("--noise_level", type=int, default=None, help="Noise Level")
+    parser.add_argument("--noise_level", type=int, default=25, help="Noise Level")
     parser.add_argument("--optuna", action="store_true", help="Run hyperparameter optimization")
     parser.add_argument("--mask_ratio", type=float, default=0.6, help="Mask ratio")
 
@@ -85,9 +81,9 @@ def main():
 
 
     if args.optuna:
+        print("Using Optuna for hyperparameter optimization...")
         study = optuna.create_study(direction="maximize")
         study.optimize(lambda trial: objective(trial, args), n_trials=20)
-
 
         print("Best trial:")
         print(f"  Value (PSNR): {study.best_trial.value:.2f}")
@@ -95,9 +91,9 @@ def main():
         for key, value in study.best_trial.params.items():
             print(f"    {key}: {value}")
     else:
+        print("Direct Training")
         results = run_training(args)
         print("Test Results:", results)
-
 
 
 if __name__ == "__main__":
