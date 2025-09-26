@@ -66,6 +66,7 @@ def main():
     parser.add_argument("--dataset_path", type=str, default=None, help="/kaggle/input/polyucropped")
     parser.add_argument("--noise_level", type=str, default=None, help="Noise Level")
     parser.add_argument("--optuna", action="store_true", help="Run hyperparameter optimization")
+    parser.add_argument("--mask_ratio", type=float, default=0.6, help="Mask ratio")
 
 
     args = parser.parse_args()
