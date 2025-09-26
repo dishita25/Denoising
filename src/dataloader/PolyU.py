@@ -12,6 +12,7 @@ def evaluate_polyu(model, dataset_path, device="cuda"):
     model.eval()
 
     psnrs = []
+    ssims = []
     center_crop = T.CenterCrop((256, 256))
     
     # get all mean images
@@ -28,9 +29,11 @@ def evaluate_polyu(model, dataset_path, device="cuda"):
         clean_tensor = to_tensor(clean_img).unsqueeze(0).to(device)
         noisy_tensor = to_tensor(noisy_img).unsqueeze(0).to(device)
 
-        psnr = test(model, noisy_tensor, clean_tensor)
+        psnr, ssim = test(model, noisy_tensor, clean_tensor)
         psnrs.append(psnr)
+        ssims.append(ssim)
 
     avg_psnr = np.mean(psnrs)
-    print(f"Average PSNR: {avg_psnr:.2f} dB")
-    return avg_psnr
+    avg_ssim = np.mean(ssims)
+    print(f"Average PSNR: {avg_psnr:.2f} dB | Average SSIM: {avg_ssim:.2f}")
+    return avg_psnr, avg_ssim

@@ -1,6 +1,7 @@
 import torch.nn.functional as F
 import torch 
 import numpy as np
+from torchmetrics.image import StructuralSimilarityIndexMeasure
 
 def pair_downsampler(img):
     #img has shape B C H W
@@ -53,5 +54,7 @@ def test(model, noisy_img, clean_img):
         pred = torch.clamp(noisy_img - model(noisy_img),0,1)
         MSE = mse(clean_img, pred).item()
         PSNR = 10*np.log10(1/MSE)
+        ssim = StructuralSimilarityIndexMeasure(data_range=1.0)
+        score = ssim(pred, clean_img)
 
-    return PSNR
+    return PSNR, score

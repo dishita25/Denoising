@@ -39,10 +39,10 @@ def train_model(
         scheduler.step()
 
         # --- Test step --- 
-        PSNR = test(model, noisy_img, clean_img)
+        PSNR, ssim = test(model, noisy_img, clean_img)
 
         if epoch % 100 == 0 or epoch == 1:
-            print(f"Epoch [{epoch}/{max_epoch}] | Loss: {loss.item():.6f} | PSNR: {PSNR:.2f} dB")
+            print(f"Epoch [{epoch}/{max_epoch}] | Loss: {loss.item():.6f} | PSNR: {PSNR:.4f} dB | SSIM: {ssim:.4f}")
 
     return model
 
@@ -52,13 +52,13 @@ def test_model(model, dataset_name, dataset_path, device="cuda", noise_level = N
 
     if dataset_name == "polyu":
         print("Evaluating on PolyU...")
-        results = evaluate_polyu(model, dataset_path, device)
+        psnr, ssim = evaluate_polyu(model, dataset_path, device)
 
     elif dataset_name == "Mcmaster" or dataset_name == "CBSD" or dataset_name == "kodak":
         print("Evaluating on Artificial dataset...")
-        results = evaluate_artificial(model, dataset_name, noise_level, dataset_path, device)
+        psnr, ssim = evaluate_artificial(model, dataset_name, noise_level, dataset_path, device)
 
     else:
         raise ValueError(f"Unknown dataset: {dataset_name}")
 
-    return results
+    return psrn, ssim

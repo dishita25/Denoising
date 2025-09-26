@@ -46,14 +46,14 @@ def run_training(args, trial=None):
 
 
     # --- Testing ---
-    results = test_model(model, args.dataset, args.dataset_path, device=args.device, noise_level=args.noise_level)
-    return results
+    psnr, ssim = test_model(model, args.dataset, args.dataset_path, device=args.device, noise_level=args.noise_level)
+    return psnr, ssim
 
 
 
 def objective(trial, args):
-    avg_psnr = run_training(args, trial)
-    return avg_psnr
+    avg_psnr, avg_ssim = run_training(args, trial)
+    return avg_psnr, avg_ssim
 
 
 def main():
@@ -92,8 +92,8 @@ def main():
             print(f"    {key}: {value}")
     else:
         print("Direct Training")
-        results = run_training(args)
-        print("Test Results:", results)
+        psnr, ssim = run_training(args)
+        print(f"Test Results: PSNR:{psnr}, SSIM: {ssim}")
 
 
 if __name__ == "__main__":

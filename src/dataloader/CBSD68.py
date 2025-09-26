@@ -17,6 +17,7 @@ def evaluate_artificial(model, dataset_name, noise_level, dataset_path, device="
     clean_path = os.path.join(dataset_path, "original_png")
 
     psnrs = []
+    ssims = []
     center_crop = T.CenterCrop((256, 256))
     files = sorted(os.listdir(clean_path))
 
@@ -29,9 +30,11 @@ def evaluate_artificial(model, dataset_name, noise_level, dataset_path, device="
         clean_tensor = to_tensor(clean_img).unsqueeze(0).to(device)
         noisy_tensor = to_tensor(noisy_img).unsqueeze(0).to(device)
 
-        psnr = test(model, noisy_tensor, clean_tensor)
+        psnr, ssim = test(model, noisy_tensor, clean_tensor)
         psnrs.append(psnr)
+        ssims.append(ssim)
 
     avg_psnr = np.mean(psnrs)
-    print(f"Noise Level {noise_level} → Average PSNR: {avg_psnr:.2f} dB")
-    return avg_psnr
+    avg_ssim = np.mean(ssims)
+    print(f"Noise Level {noise_level} → Average PSNR: {avg_psnr:.2f} dB → Average SSIM: {avg_ssim:.2f}")
+    return avg_psnr, avg_ssim
