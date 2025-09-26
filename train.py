@@ -16,7 +16,7 @@ def run_training(args, trial=None):
     lr = trial.suggest_categorical("lr", [0.001, 0.01, 0.05, 0.1]) if trial else args.lr
     step_size = trial.suggest_int("step_size", 500, 2000, step=500) if trial else args.step_size
     mask_ratio = trial.suggest_categorical("mask_ratio", [0.5, 0.55, 0.6, 0.65]) if trial else args.mask_ratio
-    gamma = trial.suggest_categorical("gamma", [0.5, 0.6, 0.7, 0.8, 0.9]) if trial else args.gamma
+    gamma = trial.suggest_categorical("gamma", [0.5, 0.6, 0.7]) if trial else args.gamma
     n_chan = args.n_chan   
 
     # --- Load and preprocess images ---
