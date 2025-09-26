@@ -1,6 +1,5 @@
 import torch.nn.functional as F
 import torch 
-from loss import mse 
 import numpy as np
 
 def pair_downsampler(img):
@@ -49,7 +48,7 @@ def add_noise(x,noise_level, noise_type = 'gauss'):
     return noisy
 
 def test(model, noisy_img, clean_img):
-
+    from src.loss import mse 
     with torch.no_grad():
         pred = torch.clamp(noisy_img - model(noisy_img),0,1)
         MSE = mse(clean_img, pred).item()
