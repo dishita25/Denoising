@@ -30,7 +30,7 @@ def main():
     
     # noisy_img
     if args.dataset == "Mcmaster" or args.dataset == "CBSD" or args.dataset == "kodak":   
-        noisy_img = add_noise(clean_img, args.noise_level)
+        noisy_img = add_noise(clean_img, args.noise_level) ## directly pass the noisy image here, you do not need to add noise...
     else:    
         noisy_img = Image.open(args.noisy_img).convert("RGB")
         
