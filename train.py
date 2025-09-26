@@ -43,7 +43,7 @@ def run_training(args, trial=None):
         step_size=step_size,
         gamma=gamma,
         mask_ratio=mask_ratio,
-        trial = trial
+        trial = trial,
         device=args.device,
     )
 
