@@ -12,11 +12,13 @@ to_tensor = T.ToTensor()
 
 def run_training(args, trial=None):
     # --- Hyperparameters (Optuna overrides if trial is provided) ---
-    max_epoch = trial.suggest_int("max_epoch", 3000, 6000, step=500) if trial else args.max_epoch
-    lr = trial.suggest_categorical("lr", [0.001, 0.01, 0.05, 0.1]) if trial else args.lr
+    max_epoch = trial.suggest_int("max_epoch", 3000, 5500, step=500) if trial else args.max_epoch #removing 6000
+    lr = trial.suggest_categorical("lr", [0.001, 0.01, 0.05]) if trial else args.lr # removing 0.1
     step_size = trial.suggest_int("step_size", 500, 2000, step=500) if trial else args.step_size
     mask_ratio = trial.suggest_categorical("mask_ratio", [0.5, 0.55, 0.6, 0.65]) if trial else args.mask_ratio
-    gamma = trial.suggest_categorical("gamma", [0.5, 0.6, 0.7]) if trial else args.gamma
+    blind_spot_weight = trial.suggest_categorical("blind_spot_weight", [0.5, 0.75, 1]) if trial else args.blind_spot_weight
+    # gamma = trial.suggest_categorical("gamma", [0.5, 0.6, 0.7]) if trial else args.gamma
+    gamma = args.gamma
     n_chan = args.n_chan   
 
     # --- Load and preprocess images ---
@@ -41,6 +43,7 @@ def run_training(args, trial=None):
         step_size=step_size,
         gamma=gamma,
         mask_ratio=mask_ratio,
+        blind_spot_weight=blind_spot_weight,
         device=args.device
     )
 
@@ -74,6 +77,7 @@ def main():
     parser.add_argument("--noise_level", type=int, default=25, help="Noise Level")
     parser.add_argument("--optuna", action="store_true", help="Run hyperparameter optimization")
     parser.add_argument("--mask_ratio", type=float, default=0.6, help="Mask ratio")
+    parser.add_argument("--blind_spot_weight", type=float, default=1, help="blind_spot_weight")
 
 
 
@@ -85,11 +89,13 @@ def main():
         study = optuna.create_study(directions=["maximize", "maximize"])
         study.optimize(lambda trial: objective(trial, args), n_trials=20)
 
-        print("Best trial:")
-        print(f"  Values (PSNR, SSIM): {study.best_trial.values}")
-        print("  Params: ")
-        for key, value in study.best_trial.params.items():
-            print(f"    {key}: {value}")
+        print("Best trials:")
+        for t in study.best_trials:
+            print(f"  Values (PSNR, SSIM): {t.values}")
+            print("  Params: ")
+            for key, value in t.params.items():
+                print(f"    {key}: {value}")
+
     else:
         print("Direct Training")
         psnr, ssim = run_training(args)
