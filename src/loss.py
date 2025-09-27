@@ -6,7 +6,7 @@ def mse(gt: torch.Tensor, pred:torch.Tensor)-> torch.Tensor:
     loss = torch.nn.MSELoss()
     return loss(gt,pred)
 
-def loss_func(noisy_img, model, mask_ratio=0.6):
+def loss_func(noisy_img, model, mask_ratio=0.6, blind_spot_weight = 1):
     # --- Blind-spot masking ---
     masked_img, mask = apply_blindspot_mask(noisy_img, mask_ratio)
     pred_masked = noisy_img - model(masked_img)   # predict clean signal
@@ -26,5 +26,5 @@ def loss_func(noisy_img, model, mask_ratio=0.6):
     loss_cons = 0.5 * (mse(pred1, denoised1) + mse(pred2, denoised2))
 
     # --- Combine ---
-    loss = loss_res + loss_cons + loss_blindspot
+    loss = loss_res + loss_cons + blind_spot_weight * loss_blindspot
     return loss

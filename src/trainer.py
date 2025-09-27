@@ -14,6 +14,7 @@ def train_model(
     step_size,
     gamma,
     mask_ratio,
+    blind_spot_weight,
     device="cuda",
 ):
 
@@ -32,7 +33,7 @@ def train_model(
 
     for epoch in range(1, max_epoch + 1):
         # --- Train step ---
-        loss = loss_func(noisy_img, model, mask_ratio=mask_ratio)
+        loss = loss_func(noisy_img, model, mask_ratio=mask_ratio, blind_spot_weight=blind_spot_weight)
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
