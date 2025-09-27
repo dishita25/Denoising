@@ -16,7 +16,7 @@ def run_training(args, trial=None):
     lr = trial.suggest_categorical("lr", [0.001, 0.01, 0.05]) if trial else args.lr # removing 0.1
     step_size = trial.suggest_int("step_size", 500, 2000, step=500) if trial else args.step_size
     mask_ratio = trial.suggest_categorical("mask_ratio", [0.5, 0.55, 0.6, 0.65]) if trial else args.mask_ratio
-    blind_spot_weight = trial.suggest_categorical("blind_spot_weight", [0.5, 0.75, 1]) if trial else args.blind_spot_weight
+    blind_spot_weight = trial.suggest_categorical("blind_spot_weight", [0.25, 0.5, 0.75, 1]) if trial else args.blind_spot_weight
     # gamma = trial.suggest_categorical("gamma", [0.5, 0.6, 0.7]) if trial else args.gamma
     gamma = args.gamma
     n_chan = args.n_chan   
