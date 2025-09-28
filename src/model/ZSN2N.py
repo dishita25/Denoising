@@ -1,6 +1,5 @@
 import torch.nn.functional as F
 import torch.nn as nn
-import torch
 
 class SEKG(nn.Module):
     def __init__(self, in_channels=64, kernel_size=3):
