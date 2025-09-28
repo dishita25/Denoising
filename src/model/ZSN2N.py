@@ -1,7 +1,6 @@
 import torch.nn.functional as F
 import torch.nn as nn
-import torch.nn as nn
-import torch.nn.functional as F
+import torch
 
 class SEKG(nn.Module):
     def __init__(self, in_channels=64, kernel_size=3):
@@ -58,15 +57,24 @@ class network(nn.Module):
         self.act = nn.LeakyReLU(negative_slope=0.2, inplace=True)
 
         self.conv1 = DyConv(in_channels=n_chan, kernel_size=kernel_size)      
+        self.proj1 = nn.Conv2d(n_chan, chan_embed, 1) 
         self.conv2 = DyConv(in_channels=chan_embed, kernel_size=kernel_size)
 
         self.conv3 = nn.Conv2d(chan_embed, n_chan, 1)  
 
     def forward(self, x):
         x = self.act(self.conv1(x))
+        x = self.proj1(x)    
         x = self.act(self.conv2(x))
         x = self.conv3(x)
         return x
+
+# model = network(n_chan=3, chan_embed=48, kernel_size=3)
+# x = torch.randn(2, 3, 32, 32)
+# out = model(x)
+
+# print("Input shape :", x.shape)
+# print("Output shape:", out.shape)
 
 # original network
 # class network(nn.Module):
