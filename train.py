@@ -12,7 +12,7 @@ to_tensor = T.ToTensor()
 
 def run_training(args, trial=None):
     # --- Hyperparameters (Optuna overrides if trial is provided) ---
-    max_epoch = trial.suggest_int("max_epoch", 3000, 5500, step=500) if trial else args.max_epoch #removing 6000
+    max_epoch = trial.suggest_int("max_epoch", 4000, 5500, step=500) if trial else args.max_epoch #removing 6000
     lr = trial.suggest_categorical("lr", [0.001, 0.01, 0.05]) if trial else args.lr # removing 0.1
     step_size = trial.suggest_int("step_size", 500, 2000, step=500) if trial else args.step_size
     mask_ratio = trial.suggest_categorical("mask_ratio", [0.5, 0.55, 0.6, 0.65]) if trial else args.mask_ratio
@@ -67,7 +67,7 @@ def main():
     parser.add_argument("--max_epoch", type=int, default=5000, help="Training epochs")
     parser.add_argument("--lr", type=float, default=0.001, help="Learning rate")
     parser.add_argument("--step_size", type=int, default=1000, help="LR step size")
-    parser.add_argument("--gamma", type=float, default=0.5, help="LR decay factor")
+    parser.add_argument("--gamma", type=float, default=0.6, help="LR decay factor")
     parser.add_argument("--device", type=str, default="cuda", help="Device to use")
     parser.add_argument("--n_chan", type=int, default=3, help="Number of channels (auto if None)")
     parser.add_argument("--noisy_img", type=str, default="/kaggle/input/original/Canon5D2_bag_Real.JPG", help="Noisy image path")
@@ -87,7 +87,7 @@ def main():
     if args.optuna:
         print("Using Optuna for hyperparameter optimization...")
         study = optuna.create_study(directions=["maximize", "maximize"])
-        study.optimize(lambda trial: objective(trial, args))
+        study.optimize(lambda trial: objective(trial, args), n_trials=500)
 
         print("Best trials:")
         for t in study.best_trials:
