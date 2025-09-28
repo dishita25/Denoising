@@ -87,7 +87,7 @@ def main():
     if args.optuna:
         print("Using Optuna for hyperparameter optimization...")
         study = optuna.create_study(directions=["maximize", "maximize"])
-        study.optimize(lambda trial: objective(trial, args), n_trials=20)
+        study.optimize(lambda trial: objective(trial, args))
 
         print("Best trials:")
         for t in study.best_trials:
