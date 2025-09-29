@@ -6,6 +6,8 @@ from src.dataloader.CBSD68 import evaluate_artificial
 from src.dataloader.noisy_dataset import NoisyImageDataset
 from src.utils import test
 import torchvision.transforms as T 
+from torch.utils.data import DataLoader
+
 
 def train_model(
     noisy_dir,
@@ -35,6 +37,7 @@ def train_model(
     #noisy_img = noisy_img.to(device)
 
     transform = T.Compose([
+        T.CenterCrop((256,256)),
         T.toTensor()
     ])
 
@@ -89,6 +92,11 @@ def train_model(
 
 def test_model(model, dataset_name, dataset_path, device="cuda", noise_level = None):
     model.eval()
+
+    transform = T.Compose([
+        T.CenterCrop((256, 256)),
+        T.ToTensor()
+    ])
 
     if dataset_name == "polyu":
         print("Evaluating on PolyU...")

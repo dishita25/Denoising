@@ -22,15 +22,15 @@ def run_training(args, trial=None):
     n_chan = args.n_chan   
 
     # --- Load and preprocess images ---
-    clean_img = Image.open(args.clean_img).convert("RGB")
-    if args.dataset in ["Mcmaster", "CBSD", "kodak"]:
-        noisy_img = Image.open(args.noisy_img).convert("RGB")
-    else:
-        noisy_img = Image.open(args.noisy_img).convert("RGB")
+    # clean_img = Image.open(args.clean_img).convert("RGB")
+    # if args.dataset in ["Mcmaster", "CBSD", "kodak"]:
+    #     noisy_img = Image.open(args.noisy_img).convert("RGB")
+    # else:
+    #     noisy_img = Image.open(args.noisy_img).convert("RGB")
 
-    center_crop = T.CenterCrop((256, 256))
-    clean_img = to_tensor(center_crop(clean_img)).unsqueeze(0)
-    noisy_img = to_tensor(center_crop(noisy_img)).unsqueeze(0)
+    # center_crop = T.CenterCrop((256, 256))
+    # clean_img = to_tensor(center_crop(clean_img)).unsqueeze(0)
+    # noisy_img = to_tensor(center_crop(noisy_img)).unsqueeze(0)
 
 
     # --- Training ---
