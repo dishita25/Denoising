@@ -241,36 +241,13 @@ def pair_downsampler(img):
 
     return output1, output2
 
-# def mse(gt: torch.Tensor, pred: torch.Tensor) -> torch.Tensor:
-#     return nn.MSELoss()(gt, pred)
-
-# def loss_func(noisy_img, model):
-#     """
-#     downsample, pass to model subtract, then do original - output, downsample ( I could try noise consistency as neoightbouting pixels shoufl have same noise )
-#     """
-#     # --- Original consistency losses ---
-#     noisy1, noisy2 = pair_downsampler(noisy_img)
-#     pred1 = noisy1 - model(noisy1)
-#     pred2 = noisy2 - model(noisy2)
-#     loss_res = 0.5 * (mse(noisy1, pred2) + mse(noisy2, pred1))
-
-#     noisy_denoised = noisy_img - model(noisy_img)
-#     denoised1, denoised2 = pair_downsampler(noisy_denoised)
-#     loss_cons = 0.5 * (mse(pred1, denoised1) + mse(pred2, denoised2))
-
-#     loss = loss_res + loss_cons
-#     return loss
-
-
-# def loss_func(img1, img2, model):
-#     pred1 = model(img1)
-#     loss = mse_loss(img2, pred1)
-#     return loss
+"""downsample, pass to model subtract, then do original - output, downsample ( I could try noise consistency as neoightbouting pixels shoufl have same noise )"""
+# loss_cons1 = 0.5 * (mse_loss(pred11, img1) + mse_loss(pred2, img2)) # this can be pred, img1 and pred, img2 ( could work) - try this next
 
 def loss_func(img1, img2, model):
     noisy11, noisy12 = pair_downsampler(img1)
     noisy21, noisy22 = pair_downsampler(img2)
-
+    
     pred11 = noisy11 - model(noisy11)
     pred12 = noisy12 - model(noisy12)
 
@@ -297,7 +274,6 @@ def loss_func(img1, img2, model):
 
     return loss
 
-# loss_cons1 = 0.5 * (mse_loss(pred11, img1) + mse_loss(pred2, img2)) # this can be pred, img1 and pred, img2 ( could work) - try this next
 
 # -------------------------------
 def train(model, optimizer, img_bank):
