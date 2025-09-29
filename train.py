@@ -35,8 +35,9 @@ def run_training(args, trial=None):
 
     # --- Training ---
     model = train_model(
-        clean_img=clean_img,
-        noisy_img=noisy_img,
+        noisy_dir = args.noisy_dir,
+        #clean_img=clean_img,
+        #noisy_img=noisy_img,
         n_chan=n_chan,
         max_epoch=max_epoch,
         lr=lr,
@@ -70,14 +71,17 @@ def main():
     parser.add_argument("--gamma", type=float, default=0.5, help="LR decay factor")
     parser.add_argument("--device", type=str, default="cuda", help="Device to use")
     parser.add_argument("--n_chan", type=int, default=3, help="Number of channels (auto if None)")
-    parser.add_argument("--noisy_img", type=str, default="/kaggle/input/original/Canon5D2_bag_Real.JPG", help="Noisy image path")
-    parser.add_argument("--clean_img", type=str, default="/kaggle/input/original/Canon5D2_bag_mean.JPG", help="Path to clean image")
+    #parser.add_argument("--noisy_img", type=str, default="/kaggle/input/original/Canon5D2_bag_Real.JPG", help="Noisy image path")
+    #parser.add_argument("--clean_img", type=str, default="/kaggle/input/original/Canon5D2_bag_mean.JPG", help="Path to clean image")
     parser.add_argument("--dataset", type=str, default="polyu", help="Dataset name")
     parser.add_argument("--dataset_path", type=str, default="/kaggle/input/polyucropped", help="Dataset path for inference")
     parser.add_argument("--noise_level", type=int, default=25, help="Noise Level")
     parser.add_argument("--optuna", action="store_true", help="Run hyperparameter optimization")
     parser.add_argument("--mask_ratio", type=float, default=0.6, help="Mask ratio")
     parser.add_argument("--blind_spot_weight", type=float, default=1, help="blind_spot_weight")
+    parser.add_argument("--noisy_dir", type=str, default="/kaggle/input/original/Canon5D2_bag_Real.JPG", help="Noisy images director")
+    parser.add_argument("--batch_size", type=int, default=4, help="Batch size for training")
+
 
 
 

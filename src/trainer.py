@@ -3,11 +3,14 @@ from src.loss import loss_func
 from src.model.ZSN2N import network
 from src.dataloader.PolyU import evaluate_polyu
 from src.dataloader.CBSD68 import evaluate_artificial
+from src.dataloader.noisy_dataset import NoisyImageDataset
 from src.utils import test
+import torchvision.transforms as T 
 
 def train_model(
-    clean_img,
-    noisy_img,
+    noisy_dir
+    #clean_img,
+    #noisy_img,
     n_chan,
     max_epoch,
     lr,
@@ -28,22 +31,58 @@ def train_model(
     optimizer = optim.Adam(model.parameters(), lr=lr)
     scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=step_size, gamma=gamma)
 
-    clean_img = clean_img.to(device)
-    noisy_img = noisy_img.to(device)
+    #clean_img = clean_img.to(device)
+    #noisy_img = noisy_img.to(device)
+
+    transform = T.Compose([
+        T.toTensor()
+    ])
+
+    train_dataset = NoisyImageDataset(noisy_dir=noisy_dir, transform=transform)
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=2)
+
+    # for epoch in range(1, max_epoch + 1):
+    #     # --- Train step ---
+    #     loss = loss_func(noisy_img, model, mask_ratio=mask_ratio, blind_spot_weight=blind_spot_weight)
+    #     optimizer.zero_grad()
+    #     loss.backward()
+    #     optimizer.step()
+    #     scheduler.step()
+
+    #     # --- Test step --- 
+    #     PSNR, ssim = test(model, noisy_img, clean_img)
+
+    #     if epoch % 100 == 0 or epoch == 1:
+    #         print(f"Epoch [{epoch}/{max_epoch}] | Loss: {loss.item():.6f} | PSNR: {PSNR:.4f} dB | SSIM: {ssim:.4f}")
+
+    # return model
 
     for epoch in range(1, max_epoch + 1):
-        # --- Train step ---
-        loss = loss_func(noisy_img, model, mask_ratio=mask_ratio, blind_spot_weight=blind_spot_weight)
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
-        scheduler.step()
+        model.train()
+        epoch_loss = 0.0
+        
+        for batch_idx, noisy_imgs in enumerate(train_loader):
+            noisy_imgs = noisy_imgs.to(device)
+            
+            batch_loss = 0.0
+            for i in range(noisy_imgs.size(0)):
+                noisy_img = noisy_imgs[i:i+1]
+                loss = loss_func(noisy_img, model, mask_ratio=mask_ratio, blind_spot_weight=blind_spot_weight)
+                batch_loss += loss
+            
+            batch_loss = batch_loss / noisy_imgs.size(0)
+            
+            optimizer.zero_grad()
+            batch_loss.backward()
+            optimizer.step()
+            
+            epoch_loss += batch_loss.item()
 
-        # --- Test step --- 
-        PSNR, ssim = test(model, noisy_img, clean_img)
+        scheduler.step()
+        epoch_loss /= len(train_loader)
 
         if epoch % 100 == 0 or epoch == 1:
-            print(f"Epoch [{epoch}/{max_epoch}] | Loss: {loss.item():.6f} | PSNR: {PSNR:.4f} dB | SSIM: {ssim:.4f}")
+            print(f"Epoch [{epoch}/{max_epoch}] | Loss: {epoch_loss:.6f}")
 
     return model
 
