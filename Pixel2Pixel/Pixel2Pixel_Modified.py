@@ -29,8 +29,8 @@ parser.add_argument('--ws', default=40, type=int, help='Window size')
 parser.add_argument('--ps', default=7, type=int, help='Patch size')
 parser.add_argument('--nn', default=16, type=int, help='Number of nearest neighbors to search')
 parser.add_argument('--mm', default=8, type=int, help='Number of pixels in pixel bank to use for training')
-parser.add_argument('--nl', default=0.2, type=float, help='Noise level, for saltpepper and impulse noise, enter half the noise level.')
-parser.add_argument('--nt', default='bernoulli', type=str, help='Noise type: gauss, poiss, saltpepper, bernoulli, impulse')
+parser.add_argument('--nl', default=25, type=float, help='Noise level, for saltpepper and impulse noise, enter half the noise level.')
+parser.add_argument('--nt', default='gauss', type=str, help='Noise type: gauss, poiss, saltpepper, bernoulli, impulse')
 parser.add_argument('--loss', default='L1', type=str, help='Loss function type')
 parser.add_argument('--train_image_idx', default=0, type=int, help='Index of image to train on')
 args = parser.parse_args()
@@ -293,7 +293,7 @@ def loss_func(img1, img2, model):
 
     loss_cons = loss_cons1 + loss_cons2 # loss 2 
 
-    loss = loss_res + loss_cons # loss 2
+    loss = loss_res + loss_cons # loss total
 
     return loss
 
