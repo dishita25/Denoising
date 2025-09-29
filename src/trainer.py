@@ -38,7 +38,7 @@ def train_model(
 
     transform = T.Compose([
         T.CenterCrop((256,256)),
-        T.toTensor()
+        T.ToTensor()
     ])
 
     train_dataset = NoisyImageDataset(noisy_dir=noisy_dir, transform=transform)
