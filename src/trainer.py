@@ -20,6 +20,7 @@ def train_model(
     gamma,
     mask_ratio,
     blind_spot_weight,
+    batch_size,
     device="cuda",
 ):
 

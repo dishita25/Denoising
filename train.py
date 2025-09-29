@@ -45,6 +45,7 @@ def run_training(args, trial=None):
         gamma=gamma,
         mask_ratio=mask_ratio,
         blind_spot_weight=blind_spot_weight,
+        batch_size = args.batch_size,
         device=args.device
     )
 
