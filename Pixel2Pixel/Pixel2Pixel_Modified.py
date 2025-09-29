@@ -267,68 +267,36 @@ def pair_downsampler(img):
 #     loss = mse_loss(img2, pred1)
 #     return loss
 
-# def loss_func(img1, img2, model):
-#     noisy11, noisy12 = pair_downsampler(img1)
-#     noisy21, noisy22 = pair_downsampler(img2)
-
-#     pred11 = noisy11 - model(noisy11)
-#     pred12 = noisy12 - model(noisy12)
-
-#     pred21 = noisy21 - model(noisy21)
-#     pred22 = noisy22 - model(noisy22)
-
-#     loss_res1 = 0.5 * (mse_loss(noisy11, pred12) + mse_loss(noisy12, pred11))
-#     loss_res2 = 0.5 * (mse_loss(noisy21, pred22) + mse_loss(noisy22, pred21))
-
-#     loss_res = loss_res1 + loss_res2 # loss 1 
-
-#     noisy_denoised1 = img1 - model(img1)
-#     noisy_denoised2 = img2 - model(img2)
-
-#     denoised11, denoised12 = pair_downsampler(noisy_denoised1)
-#     denoised21, denoised22 = pair_downsampler(noisy_denoised2)
-
-#     loss_cons1 = 0.5 * (mse_loss(pred11, denoised11) + mse_loss(pred12, denoised12))
-#     loss_cons2 = 0.5 * (mse_loss(pred21, denoised21) + mse_loss(pred22, denoised22))
-
-#     loss_cons = loss_cons1 + loss_cons2 # loss 2 
-
-#     loss = loss_res + loss_cons # loss 2
-
-#     return loss
-
-def loss_func(img1, img2, model, lambda_cons=1.0):
-    # Simple Noise2Noise + consistency approach
-    #Img1 and img2 are already independent noisy versions of similar content
-    
-    pred1 = img1 - model(img1)
-    pred2 = img2 - model(img2)
-    
-    # Loss 1: Cross-reconstruction (N2N principle)
-    # Predict img2 from img1 and vice versa
-    loss_res = 0.5 * (mse_loss(img1, pred2) + mse_loss(img2, pred1))
-    
-    # Loss 2: Self-consistency through downsampling
-    # Denoising downsampled versions should match downsampled denoised version
+def loss_func(img1, img2, model):
     noisy11, noisy12 = pair_downsampler(img1)
+    noisy21, noisy22 = pair_downsampler(img2)
+
     pred11 = noisy11 - model(noisy11)
     pred12 = noisy12 - model(noisy12)
-    denoised1_down1, denoised1_down2 = pair_downsampler(pred1)
-    loss_cons1 = 0.5 * (mse_loss(pred11, denoised1_down1) + mse_loss(pred12, denoised1_down2))
-    
-    noisy21, noisy22 = pair_downsampler(img2)
+
     pred21 = noisy21 - model(noisy21)
     pred22 = noisy22 - model(noisy22)
-    denoised2_down1, denoised2_down2 = pair_downsampler(pred2)
-    loss_cons2 = 0.5 * (mse_loss(pred21, denoised2_down1) + mse_loss(pred22, denoised2_down2))
-    
-    loss_cons = loss_cons1 + loss_cons2
-    
-    # Loss 3: Direct similarity between img1 and img2 denoised outputs
-    loss_cross = mse_loss(pred1, pred2)
-    
-    loss = loss_res + lambda_cons * (loss_cons + 0.5 * loss_cross)
+
+    loss_res1 = 0.5 * (mse_loss(noisy21, pred12) + mse_loss(noisy22, pred11))
+    loss_res2 = 0.5 * (mse_loss(noisy11, pred22) + mse_loss(noisy12, pred21))
+
+    loss_res = loss_res1 + loss_res2 # loss 1 
+
+    noisy_denoised1 = img1 - model(img1)
+    noisy_denoised2 = img2 - model(img2)
+
+    denoised11, denoised12 = pair_downsampler(noisy_denoised1)
+    denoised21, denoised22 = pair_downsampler(noisy_denoised2)
+
+    loss_cons1 = 0.5 * (mse_loss(pred11, denoised11) + mse_loss(pred12, denoised12))
+    loss_cons2 = 0.5 * (mse_loss(pred21, denoised21) + mse_loss(pred22, denoised22))
+
+    loss_cons = loss_cons1 + loss_cons2 # loss 2 
+
+    loss = loss_res + loss_cons # loss 2
+
     return loss
+
 # loss_cons1 = 0.5 * (mse_loss(pred11, img1) + mse_loss(pred2, img2)) # this can be pred, img1 and pred, img2 ( could work) - try this next
 
 # -------------------------------
