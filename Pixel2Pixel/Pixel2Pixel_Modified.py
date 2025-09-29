@@ -32,6 +32,7 @@ parser.add_argument('--mm', default=8, type=int, help='Number of pixels in pixel
 parser.add_argument('--nl', default=0.2, type=float, help='Noise level, for saltpepper and impulse noise, enter half the noise level.')
 parser.add_argument('--nt', default='bernoulli', type=str, help='Noise type: gauss, poiss, saltpepper, bernoulli, impulse')
 parser.add_argument('--loss', default='L1', type=str, help='Loss function type')
+parser.add_argument('--train_image_idx', default=0, type=int, help='Index of image to train on')
 args = parser.parse_args()
 
 
@@ -80,7 +81,6 @@ def add_noise(x, noise_level):
     else:
         raise ValueError("Unsupported noise type")
     return noisy
-
 
 
 # -------------------------------
@@ -208,7 +208,7 @@ class Network(nn.Module):
         x = self.act(self.conv5(x))
         x = self.act(self.conv6(x))
         x = self.conv3(x)
-        return torch.sigmoid(x)
+        return x  # Return noise prediction (residual)
 
 
     def _initialize_weights(self):
@@ -226,30 +226,19 @@ def mse_loss(gt: torch.Tensor, pred: torch.Tensor) -> torch.Tensor:
     return nn.MSELoss()(gt, pred)
 
 
-loss_f = nn.L1Loss() if args.loss == 'L1' else nn.MSELoss()
-
-
-def pair_downsampler(img):
-    #img has shape B C H W
-    c = img.shape[1]
-
-    filter1 = torch.FloatTensor([[[[0 ,0.5],[0.5, 0]]]]).to(img.device)
-    filter1 = filter1.repeat(c,1, 1, 1)
-
-    filter2 = torch.FloatTensor([[[[0.5 ,0],[0, 0.5]]]]).to(img.device)
-    filter2 = filter2.repeat(c,1, 1, 1)
-
-    output1 = F.conv2d(img, filter1, stride=2, groups=c)
-    output2 = F.conv2d(img, filter2, stride=2, groups=c)
-
-    return output1, output2
-
-
-def loss_func(img1, img2, loss_f=nn.MSELoss()):
-    pred1 = model(img1)
-    loss = loss_f(img2, pred1)
+def loss_func(img1, img2, model):
+    # Residual learning: model predicts noise
+    pred1 = img1 - model(img1)  # Denoised version of img1
+    pred2 = img2 - model(img2)  # Denoised version of img2
+    
+    # Cross-reconstruction loss (Noise2Noise principle)
+    loss_res = 0.5 * (mse_loss(img1, pred2) + mse_loss(img2, pred1))
+    
+    # Consistency loss
+    loss_cons = mse_loss(pred1, pred2)
+    
+    loss = loss_res + loss_cons
     return loss
-
 
 
 # -------------------------------
@@ -268,7 +257,7 @@ def train(model, optimizer, img_bank):
     img2 = torch.gather(img_bank, 0, index2_exp)
     img2 = img2.permute(0, 3, 1, 2)
 
-    loss = loss_func(img1, img2, loss_f) # model is defined as global so inference happens here.
+    loss = loss_func(img1, img2, model)
     optimizer.zero_grad()
     loss.backward()
     optimizer.step()
@@ -277,14 +266,75 @@ def train(model, optimizer, img_bank):
 
 def test(model, noisy_img, clean_img):
     with torch.no_grad():
-        pred = torch.clamp(model(noisy_img), 0, 1)
+        pred = torch.clamp(noisy_img - model(noisy_img), 0, 1)
         mse_val = mse_loss(clean_img, pred).item()
         psnr = 10 * np.log10(1 / mse_val)
     return psnr, pred
 
 
 # -------------------------------
-def denoise_images():
+def train_model():
+    """Train model on one image's pixel bank"""
+    bank_dir = os.path.join(args.save, '_'.join(
+        str(i) for i in [args.dataset, args.nt, args.nl, args.ws, args.ps, args.nn, args.loss]))
+    image_folder = os.path.join(args.data_path, args.dataset)
+    image_files = sorted(os.listdir(image_folder))
+    
+    # Get the training image
+    train_image_file = image_files[args.train_image_idx]
+    print(f"\nTraining on image: {train_image_file}")
+    
+    # Load pixel bank for training image
+    bank_path = os.path.join(bank_dir, os.path.splitext(train_image_file)[0])
+    if not os.path.exists(bank_path + '.npy'):
+        print(f"Pixel bank for {train_image_file} not found!")
+        return None
+    
+    img_bank_arr = np.load(bank_path + '.npy')
+    if img_bank_arr.ndim == 3:
+        img_bank_arr = np.expand_dims(img_bank_arr, axis=1)
+    img_bank = img_bank_arr.astype(np.float32).transpose((2, 0, 1, 3))
+    
+    if noise_type=='gauss' and noise_level==10 or noise_type=='bernoulli':
+        args.mm=2
+    elif noise_type=='gauss' and noise_level==25:
+        args.mm = 4
+    else:
+        args.mm = 8
+    img_bank = img_bank[:args.mm]
+    
+    img_bank = torch.from_numpy(img_bank).to(device)
+    
+    # Load clean image to determine number of channels
+    image_path = os.path.join(image_folder, train_image_file)
+    clean_img = Image.open(image_path)
+    clean_img_tensor = transform(clean_img).unsqueeze(0).to(device)
+    n_chan = clean_img_tensor.shape[1]
+    
+    # Initialize model
+    model = Network(n_chan).to(device)
+    print(f"Number of parameters: {sum(p.numel() for p in model.parameters() if p.requires_grad)}")
+    
+    # Training setup
+    max_epoch = 3000
+    lr = 0.001
+    optimizer = optim.AdamW(model.parameters(), lr=lr)
+    scheduler = MultiStepLR(optimizer, milestones=[1500, 2000, 2500], gamma=0.5)
+    
+    # Train
+    print("Training model...")
+    for epoch in range(max_epoch):
+        loss = train(model, optimizer, img_bank)
+        scheduler.step()
+        if (epoch + 1) % 500 == 0:
+            print(f"Epoch {epoch+1}/{max_epoch}, Loss: {loss:.6f}")
+    
+    print("Training completed!")
+    return model
+
+
+def inference_on_dataset(model):
+    """Run inference on entire dataset using trained model"""
     bank_dir = os.path.join(args.save, '_'.join(
         str(i) for i in [args.dataset, args.nt, args.nl, args.ws, args.ps, args.nn, args.loss]))
     image_folder = os.path.join(args.data_path, args.dataset)
@@ -292,11 +342,10 @@ def denoise_images():
 
     os.makedirs(args.out_image, exist_ok=True)
 
-    max_epoch = 3000
-    lr = 0.001
     avg_PSNR = 0
     avg_SSIM = 0
 
+    print("\nRunning inference on entire dataset...")
     for image_file in image_files:
         image_path = os.path.join(image_folder, image_file)
         clean_img = Image.open(image_path)
@@ -305,36 +354,16 @@ def denoise_images():
 
         bank_path = os.path.join(bank_dir, os.path.splitext(image_file)[0])
         if not os.path.exists(bank_path + '.npy'):
-            print(f"Pixel bank for {image_file} not found, skipping denoising.")
+            print(f"Pixel bank for {image_file} not found, skipping.")
             continue
 
         img_bank_arr = np.load(bank_path + '.npy')
         if img_bank_arr.ndim == 3:
             img_bank_arr = np.expand_dims(img_bank_arr, axis=1)
         img_bank = img_bank_arr.astype(np.float32).transpose((2, 0, 1, 3))
-        if noise_type=='gauss' and noise_level==10 or noise_type=='bernoulli':
-            args.mm=2
-        elif noise_type=='gauss' and noise_level==25:
-            args.mm = 4
-        else:
-            args.mm = 8
-        img_bank = img_bank[:args.mm]
-
         img_bank = torch.from_numpy(img_bank).to(device)
 
         noisy_img = img_bank[0].unsqueeze(0).permute(0, 3, 1, 2)
-
-        n_chan = clean_img_tensor.shape[1]
-        global model
-        model = Network(n_chan).to(device)
-        print(f"Number of parameters for {image_file}: {sum(p.numel() for p in model.parameters() if p.requires_grad)}")
-
-        optimizer = optim.AdamW(model.parameters(), lr=lr)
-        scheduler = MultiStepLR(optimizer, milestones=[1500, 2000, 2500], gamma=0.5)
-
-        for epoch in range(max_epoch):
-            train(model, optimizer, img_bank)
-            scheduler.step()
 
         PSNR, out_img = test(model, noisy_img, clean_img_tensor)
         out_img_pil = to_pil_image(out_img.squeeze(0))
@@ -353,11 +382,19 @@ def denoise_images():
 
     avg_PSNR /= len(image_files)
     avg_SSIM /= len(image_files)
-    print(f"Average PSNR: {avg_PSNR:.2f} dB, Average SSIM: {avg_SSIM:.4f}")
+    print(f"\nAverage PSNR: {avg_PSNR:.2f} dB, Average SSIM: {avg_SSIM:.4f}")
+
 
 # -------------------------------
 if __name__ == "__main__":
     print("Constructing pixel banks ...")
     construct_pixel_bank()
-    print("Starting denoising ...")
-    denoise_images()
+    print("\n" + "="*50)
+    print("Training model on single image...")
+    print("="*50)
+    trained_model = train_model()
+    if trained_model is not None:
+        print("\n" + "="*50)
+        print("Running inference on entire dataset...")
+        print("="*50)
+        inference_on_dataset(trained_model)

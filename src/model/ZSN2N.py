@@ -2,7 +2,6 @@ import torch.nn as nn
 import torch
 import torch.nn.functional as F
 
-# Spatial + Channel Attention
 class SEKG(nn.Module):
     def __init__(self, in_channels=64, kernel_size=3):
         super().__init__()
@@ -14,31 +13,28 @@ class SEKG(nn.Module):
 
     def forward(self, x):
         b, c, h, w = x.size()
-        sa_x = self.conv_sa(x)  # spatial attention
-        y = self.avg_pool(x)    # [B, C, 1, 1]
+        sa_x = self.conv_sa(x) 
+        y = self.avg_pool(x)   
         ca_x = self.conv_ca(y.squeeze(-1).transpose(-1, -2)) \
-                     .transpose(-1, -2).unsqueeze(-1)  # channel attention
+                     .transpose(-1, -2).unsqueeze(-1)  
         return sa_x + ca_x
 
 
-# Adaptive Kernel Generator
 class AFG(nn.Module):
     def __init__(self, in_channels=64, kernel_size=3):
         super().__init__()
         self.kernel_size = kernel_size
         self.sekg = SEKG(in_channels, kernel_size)
-        # predict kernels per channel (for RGB: 3 kernels)
         self.conv = nn.Conv2d(in_channels, 3 * kernel_size * kernel_size, kernel_size=1)
 
     def forward(self, x):
         b, c, h, w = x.size()
         feat = self.sekg(x)
-        kernels = self.conv(feat)  # [B, 3*K*K, H, W]
+        kernels = self.conv(feat) 
         kernels = kernels.view(b, 3, self.kernel_size * self.kernel_size, h, w)
         return kernels
 
 
-# Apply predicted kernels dynamically
 class DynamicFiltering(nn.Module):
     def __init__(self, kernel_size=3):
         super().__init__()
@@ -46,27 +42,21 @@ class DynamicFiltering(nn.Module):
         self.pad = kernel_size // 2
 
     def forward(self, img, kernels):
-        """
-        img: [B, 3, H, W]
-        kernels: [B, 3, K*K, H, W]
-        """
+
         b, c, h, w = img.size()
         k = self.kernel_size
 
-        # unfold image to patches
-        patches = F.unfold(img, kernel_size=k, padding=self.pad)  # [B, 3*K*K, H*W]
-        patches = patches.view(b, c, k*k, h, w)  # [B, 3, K*K, H, W]
+        patches = F.unfold(img, kernel_size=k, padding=self.pad)  
+        patches = patches.view(b, c, k*k, h, w)  
 
-        # weighted sum with kernels
-        out = (patches * kernels).sum(2)  # [B, 3, H, W]
+        out = (patches * kernels).sum(2)  
         return out
 
 
-# Final Model
 class DenoiseNet(nn.Module):
     def __init__(self, in_channels=64, kernel_size=3):
         super().__init__()
-        self.feature_extractor = nn.Conv2d(3, in_channels, 3, 1, 1)  # RGB -> feature
+        self.feature_extractor = nn.Conv2d(3, in_channels, 3, 1, 1)  
         self.kernel_gen = AFG(in_channels, kernel_size)
         self.filter = DynamicFiltering(kernel_size)
 
