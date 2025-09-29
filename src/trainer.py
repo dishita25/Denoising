@@ -23,19 +23,12 @@ def train_model(
     batch_size,
     device="cuda",
 ):
-
-    if n_chan is None:
-        n_chan = clean_img.shape[1]
-
     model = network(n_chan).to(device)
     print("The number of parameters of the network is:",
           sum(p.numel() for p in model.parameters() if p.requires_grad))
 
     optimizer = optim.Adam(model.parameters(), lr=lr)
     scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=step_size, gamma=gamma)
-
-    #clean_img = clean_img.to(device)
-    #noisy_img = noisy_img.to(device)
 
     transform = T.Compose([
         T.CenterCrop((256,256)),
@@ -44,22 +37,6 @@ def train_model(
 
     train_dataset = NoisyImageDataset(noisy_dir=noisy_dir, transform=transform)
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=2)
-
-    # for epoch in range(1, max_epoch + 1):
-    #     # --- Train step ---
-    #     loss = loss_func(noisy_img, model, mask_ratio=mask_ratio, blind_spot_weight=blind_spot_weight)
-    #     optimizer.zero_grad()
-    #     loss.backward()
-    #     optimizer.step()
-    #     scheduler.step()
-
-    #     # --- Test step --- 
-    #     PSNR, ssim = test(model, noisy_img, clean_img)
-
-    #     if epoch % 100 == 0 or epoch == 1:
-    #         print(f"Epoch [{epoch}/{max_epoch}] | Loss: {loss.item():.6f} | PSNR: {PSNR:.4f} dB | SSIM: {ssim:.4f}")
-
-    # return model
 
     for epoch in range(1, max_epoch + 1):
         model.train()
@@ -93,11 +70,6 @@ def train_model(
 
 def test_model(model, dataset_name, dataset_path, device="cuda", noise_level = None):
     model.eval()
-
-    transform = T.Compose([
-        T.CenterCrop((256, 256)),
-        T.ToTensor()
-    ])
 
     if dataset_name == "polyu":
         print("Evaluating on PolyU...")
