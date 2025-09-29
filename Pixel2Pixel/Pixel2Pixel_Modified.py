@@ -288,15 +288,16 @@ def loss_func(img1, img2, model):
     denoised11, denoised12 = pair_downsampler(noisy_denoised1)
     denoised21, denoised22 = pair_downsampler(noisy_denoised2)
 
-    # loss_cons1 = 0.5 * (mse_loss(pred11, img1) + mse_loss(pred2, img2)) # this can be pred, img1 and pred, img2 ( could work) - try this next
     loss_cons1 = 0.5 * (mse_loss(pred11, denoised11) + mse_loss(pred12, denoised12))
-    loss_cons2 = 0.5 * (mse_loss(pred21, denoised21) + mse_loss(pred21, denoised22))
+    loss_cons2 = 0.5 * (mse_loss(pred21, denoised21) + mse_loss(pred22, denoised22))
 
     loss_cons = loss_cons1 + loss_cons2 # loss 2 
 
     loss = loss_res + loss_cons # loss 2
 
     return loss
+
+# loss_cons1 = 0.5 * (mse_loss(pred11, img1) + mse_loss(pred2, img2)) # this can be pred, img1 and pred, img2 ( could work) - try this next
 
 # -------------------------------
 def train(model, optimizer, img_bank):
