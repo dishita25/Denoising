@@ -317,7 +317,7 @@ def train_model():
     print(f"Number of parameters: {sum(p.numel() for p in model.parameters() if p.requires_grad)}")
     
     # Training setup
-    max_epoch = 3000
+    max_epoch = 10000
     lr = 0.001
     optimizer = optim.AdamW(model.parameters(), lr=lr)
     scheduler = MultiStepLR(optimizer, milestones=[1500, 2000, 2500], gamma=0.5)

@@ -292,7 +292,7 @@ def denoise_images():
 
     os.makedirs(args.out_image, exist_ok=True)
 
-    max_epoch = 3000
+    max_epoch = 10000
     lr = 0.001
     avg_PSNR = 0
     avg_SSIM = 0
