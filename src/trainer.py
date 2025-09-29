@@ -8,7 +8,7 @@ from src.utils import test
 import torchvision.transforms as T 
 
 def train_model(
-    noisy_dir
+    noisy_dir,
     #clean_img,
     #noisy_img,
     n_chan,
