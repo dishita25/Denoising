@@ -2,38 +2,40 @@ import torch.nn.functional as F
 import torch.nn as nn
 
 class SEKG(nn.Module):
-    def __init__(self, in_channels=64, kernel_size=3):
+    def __init__(self, in_channels, kernel_size=3):  # Remove num_kernels parameter
         super().__init__()
-        # Remove spatial attention - we want global kernel
-        # self.conv_sa = nn.Conv2d(in_channels, in_channels, kernel_size=3, stride=1, padding=1, dilation=1, groups=in_channels)
         
         # Global average pooling to get image-level features
         self.global_pool = nn.AdaptiveAvgPool2d(1)
         
-        # Generate one kernel per image using MLPs
+        # Generate kernels for all input channels
         self.kernel_gen = nn.Sequential(
             nn.Conv2d(in_channels, in_channels, 1),
             nn.LeakyReLU(0.2),
             nn.Conv2d(in_channels, in_channels * kernel_size * kernel_size, 1)
         )
+        
         self.kernel_size = kernel_size
-
-    def forward(self, input_x):
-        b, c, h, w = input_x.size()
+    
+    def forward(self, x):
+        b, c, h, w = x.size()
         
         # Get global image features
-        global_feat = self.global_pool(input_x)  # [b, c, 1, 1]
+        global_feat = self.global_pool(x)  # [b, c, 1, 1]
         
-        # Generate one kernel per image
+        # Generate kernels for all channels
         kernels = self.kernel_gen(global_feat)  # [b, c*k*k, 1, 1]
         kernels = kernels.view(b, c, self.kernel_size, self.kernel_size)  # [b, c, k, k]
+        
+        # Normalize kernel so it behaves like a blur kernel
+        kernels = kernels / (kernels.abs().sum(dim=(-2, -1), keepdim=True) + 1e-8)
         
         return kernels
 
 
 # Adaptive Filter Generation 
 class AFG(nn.Module):
-    def __init__(self, in_channels=64, kernel_size=3):
+    def __init__(self, in_channels, kernel_size=3):
         super(AFG, self).__init__()
         self.kernel_size = kernel_size
         self.sekg = SEKG(in_channels, kernel_size)
@@ -49,11 +51,11 @@ class AFG(nn.Module):
 
 # Dynamic convolution
 class DyConv(nn.Module):
-    def __init__(self, in_channels=64, kernel_size=3):
+    def __init__(self, in_channels, kernel_size=3):
         super(DyConv, self).__init__()
         self.kernel_size = kernel_size
         self.afg = AFG(in_channels, kernel_size)
-        self.unfold = nn.Unfold(kernel_size=3, dilation=1, padding=1, stride=1)
+        self.unfold = nn.Unfold(kernel_size, dilation=1, padding=1, stride=1)
         
     def forward(self, input_x):
         b, c, h, w = input_x.size()
