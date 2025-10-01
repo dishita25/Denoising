@@ -31,13 +31,13 @@ def loss_func(noisy_img, model, mask_ratio=0.6, blind_spot_weight = 1):
 
 
 def zsn2n_loss_func(noisy_stft, model):
-    # Creates temporal subsamples of STFT
     noisy1, noisy2 = pair_downsampler(noisy_stft)
-    
-    # Residual consistency loss
-    loss_res = 0.5 * (mse_loss(denoised1, noisy2) + mse_loss(denoised2, noisy1))
-    
-    # Denoised consistency loss  
-    loss_cons = 0.5 * (mse_loss(denoised1, full_denoised1) + mse_loss(denoised2, full_denoised2))
-    
+    pred1 = noisy1 - model(noisy1)
+    pred2 = noisy2 - model(noisy2)
+    loss_res = 0.5 * (mse(noisy1, pred2) + mse(noisy2, pred1))
+
+    noisy_denoised = noisy_stft - model(noisy_stft)
+    denoised1, denoised2 = pair_downsampler(noisy_denoised)
+    loss_cons = 0.5 * (mse(pred1, denoised1) + mse(pred2, denoised2))
+
     return loss_res + loss_cons
