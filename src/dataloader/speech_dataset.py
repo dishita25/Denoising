@@ -14,17 +14,17 @@ os.makedirs(basepath+"/Weights",exist_ok=True)
 os.makedirs(basepath+"/Samples",exist_ok=True)
 
 if noise_class == "white": 
-    TRAIN_INPUT_DIR = Path('Datasets/WhiteNoise_Train_Input')
+    TRAIN_INPUT_DIR = Path('/kaggle/working/Audio_Denoising/Datasets/WhiteNoise_Train_Input')
 
     if training_type == "Noise2Noise":
-        TRAIN_TARGET_DIR = Path('Datasets/WhiteNoise_Train_Output')
+        TRAIN_TARGET_DIR = Path('/kaggle/working/Audio_Denoising/Datasets/WhiteNoise_Train_Output')
     elif training_type == "Noise2Clean":
-        TRAIN_TARGET_DIR = Path('Datasets/clean_trainset_28spk_wav')
+        TRAIN_TARGET_DIR = Path('/kaggle/working/Audio_Denoising/Datasets/clean_trainset_28spk_wav')
     else:
         raise Exception("Enter valid training type")
 
-    TEST_NOISY_DIR = Path('Datasets/WhiteNoise_Test_Input')
-    TEST_CLEAN_DIR = Path('Datasets/clean_testset_wav') 
+    TEST_NOISY_DIR = Path('/kaggle/working/Audio_Denoising/Datasets/WhiteNoise_Test_Input')
+    TEST_CLEAN_DIR = Path('/kaggle/working/Audio_Denoising/Datasets/clean_testset_wav') 
     
 else:
     TRAIN_INPUT_DIR = Path('Datasets/US_Class'+str(noise_class)+'_Train_Input')
@@ -96,6 +96,7 @@ class SpeechDataset(Dataset):
         output = torch.from_numpy(output)
         
         return output
+    
 train_input_files = sorted(list(TRAIN_INPUT_DIR.rglob('*.wav')))
 train_target_files = sorted(list(TRAIN_TARGET_DIR.rglob('*.wav')))
 
